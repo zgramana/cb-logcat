@@ -184,10 +184,7 @@ namespace cblogviewer
                     ReadPID(line, props);
                     ReadMessage(line, props);
 
-                    if (!props["tag"].Equals("msgr"))
-                    {
-                        Insert(props);
-                    }
+                    Insert(props);
 
                     UpdateProgress(fs.BaseStream.Position / (float)length);
                 }
