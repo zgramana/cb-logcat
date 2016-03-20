@@ -60,7 +60,7 @@ namespace cblogviewer
             #if USE_CURSES
             RunCursesUI();
             #else
-            RunQueryUI();
+            RunListener();
             #endif
         }
 
@@ -184,7 +184,10 @@ namespace cblogviewer
                     ReadPID(line, props);
                     ReadMessage(line, props);
 
-                    Insert(props);
+                    if (props["tag"] != "msgr")
+                    {
+                        Insert(props);
+                    }
 
                     UpdateProgress(fs.BaseStream.Position / (float)length);
                 }
@@ -221,9 +224,9 @@ namespace cblogviewer
             //      03-19 12:54:12.527 D/Listener(28526): authHeader is null
 
             var leftParen = line.IndexOf('(', 21);
-            var tag = line.Substring(22, leftParen - 21);
+            var tag = line.Substring(21, leftParen - 21);
 
-            props["tag"] = tag;
+            props["tag"] = tag.Trim();
         }
 
         static void ReadPID(string line, IDictionary<string, object> props)
@@ -231,11 +234,11 @@ namespace cblogviewer
             // Exemplar: 
             //      03-19 12:54:12.527 D/Listener(28526): authHeader is null
 
-            var leftParen = line.IndexOf('(', 21);
+            var leftParen = line.IndexOf('(', 21) + 1;
             var rightParen = line.IndexOf(')', leftParen);
-            var tag = line.Substring(leftParen, rightParen - leftParen);
+            var pid = line.Substring(leftParen, rightParen - leftParen);
 
-            props["tag"] = tag;
+            props["pid"] = pid.Trim();
         }
 
         static void ReadMessage(string line, IDictionary<string, object> props)
@@ -244,7 +247,7 @@ namespace cblogviewer
             //      03-19 12:54:12.527 D/Listener(28526): authHeader is null
 
             var colon = line.IndexOf(':', 21);
-            var message = line.Substring(colon + 1);
+            var message = line.Substring(colon + 2);
 
             props["message"] = message;
         }
@@ -375,7 +378,7 @@ namespace cblogviewer
             Console.ForegroundColor = _defaultColor;
         }
             
-        static void RunQueryUI()
+        static void RunListener()
         {
             Console.Write("Enter your start time: ");
             var startTime = Console.ReadLine();
