@@ -184,7 +184,7 @@ namespace cblogviewer
                     ReadPID(line, props);
                     ReadMessage(line, props);
 
-                    if (props["tag"] != "msgr")
+                    if (!props["tag"].Equals("msgr"))
                     {
                         Insert(props);
                     }
