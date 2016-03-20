@@ -69,20 +69,5 @@
   <Import Project="..\packages\Couchbase.Lite.Storage.SystemSQLite.1.2\build\net35\Couchbase.Lite.Storage.SystemSQLite.targets" Condition="Exists('..\packages\Couchbase.Lite.Storage.SystemSQLite.1.2\build\net35\Couchbase.Lite.Storage.SystemSQLite.targets')" />
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="..\03-19-2016_13-16-33-android-dump\.DS_Store">
-      <Link>03-19-2016_13-16-33-android-dump\.DS_Store</Link>
-    </None>
-    <None Include="..\03-19-2016_13-16-33-android-dump\cabin_1_nexus_6_ZX1G225Q8W\logcat.txt">
-      <Link>03-19-2016_13-16-33-android-dump\cabin_1_nexus_6_ZX1G225Q8W\logcat.txt</Link>
-    </None>
-    <None Include="..\03-19-2016_13-16-33-android-dump\cabin_2_nexus_5x_014e4e16dca1b988\logcat.txt">
-      <Link>03-19-2016_13-16-33-android-dump\cabin_2_nexus_5x_014e4e16dca1b988\logcat.txt</Link>
-    </None>
-    <None Include="..\03-19-2016_13-16-33-android-dump\cabin_3_nexus_5_096f3768021ffb4d\logcat.txt">
-      <Link>03-19-2016_13-16-33-android-dump\cabin_3_nexus_5_096f3768021ffb4d\logcat.txt</Link>
-    </None>
-    <None Include="..\03-19-2016_13-16-33-android-dump\master_nexus6P_84B7N16125004814\logcat.txt">
-      <Link>03-19-2016_13-16-33-android-dump\master_nexus6P_84B7N16125004814\logcat.txt</Link>
-    </None>
   </ItemGroup>
 </Project>
