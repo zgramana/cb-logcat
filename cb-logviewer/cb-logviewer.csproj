@@ -18,6 +18,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Externalconsole>true</Externalconsole>
+    <Commandlineparameters>-f /Users/zgramana/Source/cb-logviewer/cb-logviewer/android.cblite2 /Users/zgramana/Source/cb-logviewer/cb-logviewer/03-19-2016_13-16-33-android-dump</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -49,6 +50,15 @@
     </Reference>
     <Reference Include="SQLitePCL.ugly">
       <HintPath>..\packages\Couchbase.Lite.1.2.0.3\lib\net45\SQLitePCL.ugly.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Options">
+      <HintPath>..\packages\Mono.Options.4.2.2.1\lib\net4-client\Mono.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Terminal">
+      <HintPath>..\packages\Mono.Terminal.4.2.2.0\lib\net4\Mono.Terminal.dll</HintPath>
+    </Reference>
+    <Reference Include="mono-curses">
+      <HintPath>..\vendor\mono-curses\bin\Release\mono-curses.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
