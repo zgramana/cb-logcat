@@ -44,7 +44,7 @@ namespace cblogviewer
             if (!LoadLogcatPaths())
             {
                 Environment.ExitCode = 100;
-                OutputUsingColor(ConsoleColor.Red, "Error loading logcat files from the directory at `{0}`", _path);
+                OutputLineUsingColor(ConsoleColor.Red, "Error loading logcat files from the directory at `{0}`", _path);
                 return;
             }
 
@@ -60,7 +60,7 @@ namespace cblogviewer
             #if USE_CURSES
             RunCursesUI();
             #else
-            RunListener();
+            RunLocalQuery();
             #endif
         }
 
@@ -71,7 +71,7 @@ namespace cblogviewer
             if (String.IsNullOrWhiteSpace(_cb_path))
             {
                 Environment.ExitCode = 101;
-                OutputUsingColor(ConsoleColor.Red, "The provided database path was empty or contained only whitespace characters.");
+                OutputLineUsingColor(ConsoleColor.Red, "The provided database path was empty or contained only whitespace characters.");
                 return isOpen;
             }
 
@@ -80,14 +80,14 @@ namespace cblogviewer
             if (!Directory.Exists(cbPathDir))
             {
                 Environment.ExitCode = 101;
-                OutputUsingColor(ConsoleColor.Red, "The parent directory must already exist for the path `{0}`", _cb_path);
+                OutputLineUsingColor(ConsoleColor.Red, "The parent directory must already exist for the path `{0}`", _cb_path);
                 return isOpen;
             }
 
             if (!Path.GetExtension(_cb_path).Equals(".cblite2"))
             {
                 Environment.ExitCode = 101;
-                OutputUsingColor(ConsoleColor.Red, "The file extension must be `.cblite2`.");
+                OutputLineUsingColor(ConsoleColor.Red, "The file extension must be `.cblite2`.");
                 return isOpen;
             }
 
@@ -107,7 +107,7 @@ namespace cblogviewer
                         }
                         catch (Exception)
                         {
-                            OutputUsingColor(ConsoleColor.Red, "Unable to delete existing database at `{0}`.", _cb_path);
+                            OutputLineUsingColor(ConsoleColor.Red, "Unable to delete existing database at `{0}`.", _cb_path);
                             Environment.ExitCode = 103;
                             return false;
                         }
@@ -122,8 +122,8 @@ namespace cblogviewer
             {
                 
                 Environment.ExitCode = 102;
-                OutputUsingColor(ConsoleColor.Red, "Unable to open/create a database at path `{0}`", _cb_path);
-                OutputUsingColor(ConsoleColor.DarkRed, e.ToString());
+                OutputLineUsingColor(ConsoleColor.Red, "Unable to open/create a database at path `{0}`", _cb_path);
+                OutputLineUsingColor(ConsoleColor.DarkRed, e.ToString());
             }
 
             return isOpen;
@@ -133,7 +133,7 @@ namespace cblogviewer
         {
             foreach(var log in _logs)
             {
-                OutputUsingColor(ConsoleColor.Blue, "Processing logs for {0}", log.Key);
+                OutputLineUsingColor(ConsoleColor.Blue, "Processing logs for {0}", log.Key);
                 _cursorLeft = Console.CursorLeft;
                 _cursorTop = Console.CursorTop;
 
@@ -256,7 +256,7 @@ namespace cblogviewer
 
             if (result == null)
             {
-                OutputUsingColor(ConsoleColor.Red, "Error inserting a new document into the database.");
+                OutputLineUsingColor(ConsoleColor.Red, "Error inserting a new document into the database.");
             }
         }
 
@@ -322,7 +322,7 @@ namespace cblogviewer
                 }
             } catch (OptionException e) {
                 Console.Write("cb-logviewer: ");
-                OutputUsingColor(
+                OutputLineUsingColor(
                     color: ConsoleColor.Red, 
                     format: e.Message
                 );
@@ -358,7 +358,7 @@ namespace cblogviewer
             Console.ForegroundColor = _defaultColor;
             try 
             {
-                Console.CursorVisible = false;
+                Console.CursorVisible = true;
                 return Console.Read();                
             }
             finally
@@ -368,19 +368,43 @@ namespace cblogviewer
 
         }
             
+        static void OutputLineUsingColor(ConsoleColor color, string format, params string[] args)
+        {
+            OutputUsingColor(color, format, args);
+            Console.Write(Environment.NewLine);
+        }
+            
         static void OutputUsingColor(ConsoleColor color, string format, params string[] args)
         {
             Console.ForegroundColor = color;
-            Console.WriteLine(format, args);
+            Console.Write(format, args);
             Console.ForegroundColor = _defaultColor;
         }
-            
-        static void RunListener()
+
+        static void RunLocalQuery()
         {
             Console.Write("Enter your start time: ");
             var startTime = Console.ReadLine();
             Console.Write("Enter your stop time: ");
             var endTime = Console.ReadLine();
+
+            var view = _database.GetView("byTime");
+            view.SetMap(
+                (doc, emit) => emit(doc["timeStamp"], null),
+                "1"
+            );
+
+            var query = view.CreateQuery();
+            query.StartKey = startTime;
+            query.EndKey = endTime;
+            OutputUsingColor(ConsoleColor.Green, "Running query...");
+            var results = query.Run();
+            OutputUsingColor(ConsoleColor.Green, "Done!");
+            foreach (var row in results)
+            {
+                if (row.Document == null) continue;
+                Console.WriteLine("{0} {1} {2} {3} {4}", row.Key, row.Document.GetProperty("device"), row.Document.GetProperty("tag"), row.Document.GetProperty("verbosity"), row.Document.GetProperty("message"));
+            }
         }
         #endregion
 
