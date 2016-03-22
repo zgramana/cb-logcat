@@ -415,27 +415,16 @@ namespace cblogviewer
             Console.Write("Enter your stop time: ");
             var endTime = Console.ReadLine();
 
-//            Console.Write("Enter your tag: ");
-//            var tag = Console.ReadLine();
-//            if (!String.IsNullOrWhiteSpace(tag)) keys["tag"] = tag;
-//
-//            Console.Write("Enter verbosity: ");
-//            var verbosity = Console.ReadLine();
-//            if (!String.IsNullOrWhiteSpace(verbosity)) keys["verbosity"] = verbosity;
-
-//            Console.Write("Enter a pid: ");
-//            var pid = Console.ReadLine();
-//            if (!String.IsNullOrWhiteSpace(pid)) keys["pid"] = pid;
-
             var endKeys = new List<object>(keys.Values);
-            endKeys[0] = String.IsNullOrWhiteSpace(endTime) ? null : endTime;
-            endKeys.Add(new Dictionary<string, object>());
+            if (!String.IsNullOrWhiteSpace(endTime))
+                endKeys[0] =  endTime;
 
             var query = view.CreateQuery();
-            //query.Keys = keys.Keys;
-            //query.GroupLevel = keys.Keys.Count;
-            query.StartKey = keys.Values.ElementAt(0);
-            query.EndKey = endKeys.Count > 1 ? endKeys[0] : null;
+            if (keys.Values.Count > 0)
+                query.StartKey = keys.Values.ElementAt(0);
+
+            if (endKeys.Count > 0)
+                query.EndKey = endKeys[0];
 
             OutputUsingColor(ConsoleColor.Green, "Running query...");
             var results = query.Run();
