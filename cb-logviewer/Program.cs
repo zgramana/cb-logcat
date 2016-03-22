@@ -6,6 +6,10 @@ using System.IO;
 using System.Text;
 using Couchbase.Lite;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using Newtonsoft.Json.Linq;
+using System.Globalization;
 
 namespace cblogviewer
 {
@@ -25,6 +29,8 @@ namespace cblogviewer
         static Database _database;
 
         static Dictionary<string, FileInfo> _logs;
+
+        static readonly ConsoleColor[] _colors = new[] { ConsoleColor.Magenta, ConsoleColor.Cyan, ConsoleColor.Green, ConsoleColor.Blue, ConsoleColor.Red, ConsoleColor.Yellow, ConsoleColor.DarkCyan, ConsoleColor.DarkGreen, ConsoleColor.DarkMagenta, ConsoleColor.DarkRed, ConsoleColor.DarkYellow };
 
         static readonly ConsoleColor _defaultColor = Console.ForegroundColor;
 
@@ -113,9 +119,11 @@ namespace cblogviewer
                         }
                     }
                 }
-
+                #if USE_SQLITE
                 _database = _manager.GetDatabase(Path.GetFileNameWithoutExtension(_cb_path));
-
+                #else
+                _database = _manager.OpenDatabase(Path.GetFileNameWithoutExtension(_cb_path), new DatabaseOptions { Create = true, StorageType = DatabaseOptions.FORESTDB_STORAGE });
+                #endif
                 isOpen = true;
             }
             catch (Exception e)
@@ -199,10 +207,9 @@ namespace cblogviewer
             var monthDay = line.Substring(0, 5);
             var time = line.Substring(6, 12);
             var year = DateTime.UtcNow.Year; // FIXME: Need to add logic to detect and wrap around 12/31.
+            var timeStamp = DateTime.Parse(String.Format("{0}-{1}T{2}", year, monthDay, time)); // FIXME    : assumes current DST/timezone for logs.
 
-            var timeStamp = DateTime.Parse(String.Format("{0}-{1}T{2}Z", year, monthDay, time));
-
-            props["timeStamp"] = timeStamp;
+            props["timeStamp"] = TimeZone.CurrentTimeZone.ToUniversalTime(timeStamp);
         }
 
         static void ReadVerbosity(string line, IDictionary<string, object> props)
@@ -368,13 +375,13 @@ namespace cblogviewer
 
         }
             
-        static void OutputLineUsingColor(ConsoleColor color, string format, params string[] args)
+        static void OutputLineUsingColor(ConsoleColor color, string format, params object[] args)
         {
             OutputUsingColor(color, format, args);
             Console.Write(Environment.NewLine);
         }
             
-        static void OutputUsingColor(ConsoleColor color, string format, params string[] args)
+        static void OutputUsingColor(ConsoleColor color, string format, params object[] args)
         {
             Console.ForegroundColor = color;
             Console.Write(format, args);
@@ -383,29 +390,74 @@ namespace cblogviewer
 
         static void RunLocalQuery()
         {
+            var view = _database.GetView("byTime");
+            view.SetMap(
+                (doc, emit) => 
+                    emit(
+//                        new[]
+//                        {
+                    ((DateTime)doc["timeStamp"]).ToString("o")
+//                        ,
+//                            doc["tag"],
+//                            doc["verbosity"]
+//                        }, 
+                        ,null
+                    ),
+                "2"
+            );                
+
+            var keys = new Dictionary<string, string>();
+
             Console.Write("Enter your start time: ");
             var startTime = Console.ReadLine();
+            if (!String.IsNullOrWhiteSpace(startTime)) keys["timeStamp"] = startTime;
+
             Console.Write("Enter your stop time: ");
             var endTime = Console.ReadLine();
 
-            var view = _database.GetView("byTime");
-            view.SetMap(
-                (doc, emit) => emit(doc["timeStamp"], null),
-                "1"
-            );
+//            Console.Write("Enter your tag: ");
+//            var tag = Console.ReadLine();
+//            if (!String.IsNullOrWhiteSpace(tag)) keys["tag"] = tag;
+//
+//            Console.Write("Enter verbosity: ");
+//            var verbosity = Console.ReadLine();
+//            if (!String.IsNullOrWhiteSpace(verbosity)) keys["verbosity"] = verbosity;
+
+//            Console.Write("Enter a pid: ");
+//            var pid = Console.ReadLine();
+//            if (!String.IsNullOrWhiteSpace(pid)) keys["pid"] = pid;
+
+            var endKeys = new List<object>(keys.Values);
+            endKeys[0] = String.IsNullOrWhiteSpace(endTime) ? null : endTime;
+            endKeys.Add(new Dictionary<string, object>());
 
             var query = view.CreateQuery();
-            query.StartKey = startTime;
-            query.EndKey = endTime;
+            //query.Keys = keys.Keys;
+            //query.GroupLevel = keys.Keys.Count;
+            query.StartKey = keys.Values.ElementAt(0);
+            query.EndKey = endKeys.Count > 1 ? endKeys[0] : null;
+
             OutputUsingColor(ConsoleColor.Green, "Running query...");
             var results = query.Run();
-            OutputUsingColor(ConsoleColor.Green, "Done!");
+            OutputLineUsingColor(ConsoleColor.Green, "Done!");
+            var _colorMap = new Dictionary<string,ConsoleColor>();
+
+            ConsoleColor deviceColor;
             foreach (var row in results)
             {
                 if (row.Document == null) continue;
-                Console.WriteLine("{0} {1} {2} {3} {4}", row.Key, row.Document.GetProperty("device"), row.Document.GetProperty("tag"), row.Document.GetProperty("verbosity"), row.Document.GetProperty("message"));
+                var device = (string)row.Document.GetProperty("device");
+
+                if (!_colorMap.ContainsKey(device))
+                {
+                    _colorMap[device] = _colors[_colorMap.Keys.Count % 11];
+                }
+                deviceColor = (ConsoleColor)_colorMap[device];
+
+                OutputLineUsingColor(deviceColor, "{0} {1} {2} {3}/{4}: {5}", row.Key, device, row.Document.GetProperty("tag"), row.Document.GetProperty("verbosity"), row.Document.GetProperty("pid"), row.Document.GetProperty("message"));
             }
         }
+
         #endregion
 
         #region Curses UI
